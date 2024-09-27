@@ -1,0 +1,44 @@
+jobs:
+- job: Job_1
+  displayName: Agent job
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  - checkout: self
+    fetchDepth: 1
+  - task: Npm@1
+    displayName: install newman  # Newman'ı global olarak yükle
+    inputs:
+      command: custom #custom komutu ile newman'ı global olarak yükle
+      verbose: false  # verbose false olarak ayarla nedeni ise daha az log almak
+      customCommand: install newman -g  #newman'ı global olarak yükle
+  - task: Npm@1
+    displayName: install newman html report # Newman HTML raporunu global olarak yükle
+    inputs:
+      command: custom
+      verbose: false
+      customCommand: install -g newman-reporter-htmlextra #newman-reporter-htmlextra'ı global olarak yükle
+  - task: carlowahlstedt.NewmanPostman.NewmanPostman.NewmanPostman@4 # Postman koleksiyonu ile Newman'ı çalıştır
+    displayName: Newman - Postman #Collection Runner
+    continueOnError: True # Newman hata alırsa devam et
+    inputs:
+      collectionFileSource: deneme/Otel projesi.postman_collection.json   # Postman koleksiyon dosyasının yolu
+      Contents: '' # Postman koleksiyon dosyasının içeriği
+      environment: deneme/New Environment.postman_environment.json  # Postman environment dosyasının yolu
+      ignoreRedirect: false # Yönlendirmeleri yoksay
+      bail: false # Hata alındığında durma
+      sslInsecure: false # SSL güvenliği yok say
+      reporters: cli,htmlextra,junit # Raporlama formatları
+      htmlExtraDarkTheme: false # HTML raporunu karanlık tema olarak ayarla
+      htmlExtraLogs: true # HTML raporunda logları göster
+      htmlExtraTestPaging: false # HTML raporunda test sayfalandırmasını kapat
+  - task: MaciejMaciejewski.postman-report.UploadPostmanHtmlReport.UploadPostmanHtmlReport@1 # Postman HTML raporunu yükle
+    displayName: Upload Postman Html Report # HTML raporunu yükle
+    continueOnError: True # Hata alırsa devam et
+  - task: PublishTestResults@2 # Test sonuçlarını yayınla
+    displayName: Publish Test Results **/newman-*.xml # Test sonuçlarını yayınla
+    continueOnError: True # Hata alırsa devam et
+    inputs:
+      testResultsFiles: '**/newman-*.xml' # Test sonuçlarının dosya adı
+      mergeTestResults: true # Test sonuçlarını birleştir
+...
